@@ -12,6 +12,7 @@ import (
 
 	"github.com/alexedwards/scs/v2"
 	"github.com/cindysurjawann/gobookings/internal/config"
+	"github.com/cindysurjawann/gobookings/internal/driver"
 	"github.com/cindysurjawann/gobookings/internal/models"
 	"github.com/cindysurjawann/gobookings/internal/render"
 	"github.com/go-chi/chi"
@@ -54,9 +55,15 @@ func getRoutes() http.Handler {
 	app.TemplateCache = tc
 	//set to true, if not it will create template cache using the wrong path (in render.go)
 	app.UseCache = true
-	repo := NewRepo(&app)
+
+	db, err := driver.ConnectSQL("host=localhost port=5431 dbname=gobookings user=postgres password=simaS123")
+	if err != nil {
+		log.Fatal("Cannot connect to database!")
+	}
+
+	repo := NewRepo(&app, db)
 	NewHandlers(repo)
-	render.NewTemplate(&app)
+	render.NewRenderer(&app)
 
 	//FROM FUNCTION ROUTES FROM ROUTES.GO
 	mux := chi.NewRouter()
