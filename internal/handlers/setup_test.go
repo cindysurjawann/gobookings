@@ -7,12 +7,12 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"testing"
 	"text/template"
 	"time"
 
 	"github.com/alexedwards/scs/v2"
 	"github.com/cindysurjawann/gobookings/internal/config"
-	"github.com/cindysurjawann/gobookings/internal/driver"
 	"github.com/cindysurjawann/gobookings/internal/models"
 	"github.com/cindysurjawann/gobookings/internal/render"
 	"github.com/go-chi/chi"
@@ -25,7 +25,7 @@ var session *scs.SessionManager
 var pathToTemplates = "./../../templates"
 var functions = template.FuncMap{}
 
-func getRoutes() http.Handler {
+func TestMain(m *testing.M) {
 	//FROM FUNCTION RUN IN MAIN.GO
 	//what am i going to put in the session
 	gob.Register(models.Reservation{})
@@ -56,15 +56,14 @@ func getRoutes() http.Handler {
 	//set to true, if not it will create template cache using the wrong path (in render.go)
 	app.UseCache = true
 
-	db, err := driver.ConnectSQL("host=localhost port=5431 dbname=gobookings user=postgres password=simaS123")
-	if err != nil {
-		log.Fatal("Cannot connect to database!")
-	}
-
-	repo := NewRepo(&app, db)
+	repo := NewTestRepo(&app)
 	NewHandlers(repo)
 	render.NewRenderer(&app)
 
+	os.Exit(m.Run())
+}
+
+func getRoutes() http.Handler {
 	//FROM FUNCTION ROUTES FROM ROUTES.GO
 	mux := chi.NewRouter()
 
