@@ -603,6 +603,9 @@ func (m *Repository) AdminReservationsCalendar(w http.ResponseWriter, r *http.Re
 		now = time.Date(year, time.Month(month), 1, 0, 0, 0, 0, time.UTC)
 	}
 
+	data := make(map[string]interface{})
+	data["now"] = now
+
 	next := now.AddDate(0, 1, 0)
 	last := now.AddDate(0, -1, 0)
 
@@ -620,8 +623,60 @@ func (m *Repository) AdminReservationsCalendar(w http.ResponseWriter, r *http.Re
 	stringMap["this_month"] = now.Format("01")
 	stringMap["this_month_year"] = now.Format("2006")
 
+	//get the first and last days of the month
+	currentYear, currentMonth, _ := now.Date()
+	currentLocation := now.Location()
+	firstOfMonth := time.Date(currentYear, currentMonth, 1, 0, 0, 0, 0, currentLocation)
+	lastOfMonth := firstOfMonth.AddDate(0, 1, -1)
+
+	intMap := make(map[string]int)
+	intMap["days_in_month"] = lastOfMonth.Day()
+
+	rooms, err := m.DB.AllRooms()
+	if err != nil {
+		helpers.ServerError(w, err)
+		return
+	}
+	data["rooms"] = rooms
+
+	for _, x := range rooms {
+		//create maps
+		reservationMap := make(map[string]int)
+		blockMap := make(map[string]int)
+
+		for d := firstOfMonth; d.After(lastOfMonth) == false; d = d.AddDate(0, 0, 1) {
+			reservationMap[d.Format("2006-01-2")] = 0
+			blockMap[d.Format("2006-01-2")] = 0
+		}
+
+		//get all the restrictions for the current room
+		restrictions, err := m.DB.GetRestrictionsForRoomByDate(x.ID, firstOfMonth, lastOfMonth)
+		if err != nil {
+			helpers.ServerError(w, err)
+			return
+		}
+
+		for _, y := range restrictions {
+			if y.ReservationID > 0 {
+				//its a reservation (0 if not)
+				for d := y.StartDate; d.After(y.EndDate) == false; d = d.AddDate(0, 0, 1) {
+					reservationMap[d.Format("2006-01-2")] = y.ReservationID
+				}
+			} else {
+				//its a block (0 if not)
+				blockMap[y.StartDate.Format("2006-01-2")] = y.ID
+			}
+		}
+		data[fmt.Sprintf("reservation_map_%d", x.ID)] = reservationMap
+		data[fmt.Sprintf("block_map_%d", x.ID)] = blockMap
+
+		m.App.Session.Put(r.Context(), fmt.Sprintf("block_map_%d", x.ID), blockMap)
+	}
+
 	render.Template(w, r, "admin-reservations-calendar.page.html", &models.TemplateData{
 		StringMap: stringMap,
+		Data:      data,
+		IntMap:    intMap,
 	})
 }
 
