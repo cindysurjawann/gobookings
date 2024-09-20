@@ -155,7 +155,7 @@
                                             {{range $index := iterate $dim}}
                                             <td class="text-center">
                                                 {{if gt (index $reservations (printf "%s-%s-%d" $currYear $curMonth (add $index 1))) 0}}
-                                                    <a href="/admin/reservations/cal/{{index $reservations (printf "%s-%s-%d" $currYear $curMonth (add $index 1))}}">
+                                                    <a href="/admin/reservations/cal/{{index $reservations (printf "%s-%s-%d" $currYear $curMonth (add $index 1))}}/show?y={{$currYear}}&m={{$curMonth}}">
                                                         <span class="text-danger">R</span>
                                                     </a>
                                                 {{else}}
