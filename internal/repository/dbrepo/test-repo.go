@@ -59,7 +59,10 @@ func (m *testDBRepo) UpdateUser(u models.User) error {
 }
 
 func (m *testDBRepo) Authenticate(email, testPassword string) (int, string, error) {
-	return 1, "", nil
+	if email == "admin@admin.com" {
+		return 1, "", nil
+	}
+	return 0, "", errors.New("error authenticate")
 }
 
 func (m *testDBRepo) AllReservations() ([]models.Reservation, error) {
@@ -108,7 +111,7 @@ func (m *testDBRepo) InsertBlockForRoom(id int, startDate time.Time) error {
 	return nil
 }
 
-//deletes a room restriction
+// deletes a room restriction
 func (m *testDBRepo) DeleteBlockByID(id int) error {
 	return nil
 }
